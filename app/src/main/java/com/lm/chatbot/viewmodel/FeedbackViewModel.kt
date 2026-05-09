@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 data class FeedbackUiState(
     val feedbackText: String = "",
     val isLoading: Boolean = false,
-    val isSubmitted: Boolean = false,
+    val successMessage: String? = null,
     val errorMessage: String? = null
 )
 
@@ -35,7 +35,13 @@ class FeedbackViewModel(
         viewModelScope.launch {
             repository.submitFeedback(text)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, isSubmitted = true) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            feedbackText = "",
+                            successMessage = "感谢你的反馈！"
+                        )
+                    }
                 }
                 .onFailure { throwable ->
                     _uiState.update {

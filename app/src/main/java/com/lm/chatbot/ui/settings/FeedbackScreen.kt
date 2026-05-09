@@ -53,6 +53,12 @@ fun FeedbackScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -66,77 +72,64 @@ fun FeedbackScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (uiState.isSubmitted) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "感谢你的反馈！",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal
-                        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Horizontal
                     )
-                    .padding(innerPadding)
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState())
+                )
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "请告诉我们你的意见或建议",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            val maxLength = 800
+
+            OutlinedTextField(
+                value = uiState.feedbackText,
+                onValueChange = { if (it.length <= maxLength) viewModel.onFeedbackChange(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+                    .height(200.dp),
+                placeholder = { Text("请输入反馈内容") },
+                supportingText = {
+                    Text(
+                        text = "${uiState.feedbackText.length}/$maxLength",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                shape = RoundedCornerShape(12.dp),
+                enabled = !uiState.isLoading
+            )
+
+            Button(
+                onClick = { viewModel.submitFeedback() },
+                enabled = uiState.feedbackText.isNotBlank() && !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(
-                    text = "请告诉我们你的意见或建议",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                val maxLength = 800
-
-                OutlinedTextField(
-                    value = uiState.feedbackText,
-                    onValueChange = { if (it.length <= maxLength) viewModel.onFeedbackChange(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    placeholder = { Text("请输入反馈内容") },
-                    supportingText = {
-                        Text(
-                            text = "${uiState.feedbackText.length}/$maxLength",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.End,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !uiState.isLoading
-                )
-
-                Button(
-                    onClick = { viewModel.submitFeedback() },
-                    enabled = uiState.feedbackText.isNotBlank() && !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.height(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text("提交反馈")
-                    }
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.height(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("提交反馈")
                 }
             }
         }
