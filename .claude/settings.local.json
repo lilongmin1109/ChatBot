@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(./gradlew compileDebugKotlin)",
-      "WebFetch(domain:supabase.com)"
-    ]
-  }
-}
