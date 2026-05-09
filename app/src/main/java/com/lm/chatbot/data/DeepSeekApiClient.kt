@@ -26,6 +26,7 @@ class DeepSeekApiClient(
     private val httpClient: HttpClient = defaultHttpClient()
 ) {
     private val chatCompletionUrl = "$baseUrl/chat/completions"
+    private val anthropicUrl = "$baseUrl/anthropic/v1/messages"
 
     suspend fun createChatCompletion(messages: List<ChatMessage>): String {
         if (apiKey.isBlank()) {
@@ -79,6 +80,50 @@ class DeepSeekApiClient(
         }
     }
 
+    suspend fun createWebSearchStream(
+        messages: List<ChatMessage>,
+        onToken: (String) -> Unit
+    ) {
+        if (apiKey.isBlank()) {
+            error("请先在 local.properties 中配置 DEEPSEEK_API_KEY")
+        }
+
+        val body = JSONObject()
+            .put("model", "deepseek-v4-flash")
+            .put("max_tokens", 4096)
+            .put("messages", buildApiMessages(messages))
+            .put("tools", JSONArray().put(
+                JSONObject()
+                    .put("type", "web_search_20250305")
+                    .put("name", "web_search")
+                    .put("max_uses", 3)
+            ))
+            .put("stream", true)
+
+        httpClient.preparePost(anthropicUrl) {
+            bearerAuth(apiKey)
+            contentType(ContentType.Application.Json)
+            setBody(TextContent(body.toString(), ContentType.Application.Json))
+        }.execute { response ->
+            val channel = response.bodyAsChannel()
+            var currentEvent: String? = null
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: continue
+                when {
+                    line.startsWith("event: ") -> {
+                        currentEvent = line.removePrefix("event: ").trim()
+                    }
+                    line.startsWith("data: ") -> {
+                        val data = line.removePrefix("data: ")
+                        if (currentEvent == "content_block_delta") {
+                            parseAnthropicTextDelta(data)?.let { onToken(it) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun buildRequestBody(messages: List<ChatMessage>): JSONObject {
         return JSONObject()
             .put("model", "deepseek-v4-flash")
@@ -106,6 +151,16 @@ class DeepSeekApiClient(
                 .getJSONObject(0)
                 .getJSONObject("delta")
                 .optString("content")
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun parseAnthropicTextDelta(data: String): String? {
+        return runCatching {
+            val json = JSONObject(data)
+            val delta = json.getJSONObject("delta")
+            if (delta.optString("type") == "text_delta") {
+                delta.optString("text")
+            } else null
         }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 

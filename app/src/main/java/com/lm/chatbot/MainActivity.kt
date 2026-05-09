@@ -30,10 +30,19 @@ class MainActivity : ComponentActivity() {
             var isDarkTheme by rememberSaveable {
                 mutableStateOf(preferences.getBoolean(KEY_DARK_THEME, false))
             }
+            var webSearchEnabled by rememberSaveable {
+                mutableStateOf(preferences.getBoolean(KEY_WEB_SEARCH, false))
+            }
 
             LaunchedEffect(isDarkTheme) {
                 preferences.edit()
                     .putBoolean(KEY_DARK_THEME, isDarkTheme)
+                    .apply()
+            }
+
+            LaunchedEffect(webSearchEnabled) {
+                preferences.edit()
+                    .putBoolean(KEY_WEB_SEARCH, webSearchEnabled)
                     .apply()
             }
 
@@ -65,6 +74,8 @@ class MainActivity : ComponentActivity() {
                     AppScreen.Settings -> SettingsScreen(
                         isDarkTheme = isDarkTheme,
                         onDarkThemeChange = { isDarkTheme = it },
+                        webSearchEnabled = webSearchEnabled,
+                        onWebSearchChange = { webSearchEnabled = it },
                         onBack = { currentScreen = AppScreen.Chat },
                         onOpenFeedback = { currentScreen = AppScreen.Feedback }
                     )
@@ -86,3 +97,4 @@ private enum class AppScreen {
 
 private const val PREFERENCES_NAME = "chat_bot_preferences"
 private const val KEY_DARK_THEME = "dark_theme"
+private const val KEY_WEB_SEARCH = "web_search"

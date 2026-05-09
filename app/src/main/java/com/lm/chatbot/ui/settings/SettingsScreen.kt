@@ -37,6 +37,8 @@ import com.lm.chatbot.ui.theme.ChatBotTheme
 fun SettingsScreen(
     isDarkTheme: Boolean,
     onDarkThemeChange: (Boolean) -> Unit,
+    webSearchEnabled: Boolean,
+    onWebSearchChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenFeedback: () -> Unit,
     modifier: Modifier = Modifier
@@ -76,6 +78,25 @@ fun SettingsScreen(
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = onDarkThemeChange
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "联网搜索",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Switch(
+                    checked = webSearchEnabled,
+                    onCheckedChange = onWebSearchChange
                 )
             }
 
@@ -148,6 +169,8 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             isDarkTheme = false,
             onDarkThemeChange = {},
+            webSearchEnabled = false,
+            onWebSearchChange = {},
             onBack = {},
             onOpenFeedback = {}
         )
