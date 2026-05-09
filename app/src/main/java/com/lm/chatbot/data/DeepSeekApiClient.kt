@@ -115,7 +115,10 @@ class DeepSeekApiClient(
                     }
                     line.startsWith("data: ") -> {
                         val data = line.removePrefix("data: ")
-                        if (currentEvent == "content_block_delta") {
+                        val eventType = currentEvent ?: runCatching {
+                            JSONObject(data).optString("type")
+                        }.getOrNull()
+                        if (eventType == "content_block_delta") {
                             parseAnthropicTextDelta(data)?.let { onToken(it) }
                         }
                     }
