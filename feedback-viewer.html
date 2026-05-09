@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户反馈</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 32px;
+            text-align: center;
+            color: #1a1a1a;
+        }
+        .feedback-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .feedback-content {
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .feedback-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 12px;
+        }
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 60px 0;
+            font-size: 15px;
+        }
+        .error {
+            text-align: center;
+            color: #e53e3e;
+            padding: 60px 0;
+        }
+        .loading {
+            text-align: center;
+            color: #999;
+            padding: 60px 0;
+        }
+        .config-note {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #92400e;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-note" id="configNote">
+        请打开此文件，将 <code>SUPABASE_URL</code> 和 <code>SUPABASE_KEY</code> 替换为你的 Supabase 项目凭据。
+    </div>
+
+    <h1>用户反馈</h1>
+    <div id="app"><div class="loading">加载中...</div></div>
+
+    <script>
+        const SUPABASE_URL = 'https://ammgtpbuxyyygjnlnkky.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtbWd0cGJ1eHl5eWdqbmxua2t5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMDA4NzAsImV4cCI6MjA5Mzg3Njg3MH0.BVbZZJT3RmfyrYfduN4_xvoaVrYPPqeEbX4qvmuuIZc';
+
+        if (SUPABASE_URL.includes('your-project') || SUPABASE_KEY.includes('your')) {
+            document.getElementById('configNote').style.display = 'block';
+            document.getElementById('app').innerHTML = '<div class="empty">请先配置 Supabase 凭据</div>';
+        } else {
+            loadFeedbacks();
+        }
+
+        async function loadFeedbacks() {
+            const app = document.getElementById('app');
+            try {
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                const { data, error } = await supabase
+                    .from('feedbacks')
+                    .select('id, content, created_at')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    app.innerHTML = '<div class="empty">暂无反馈</div>';
+                    return;
+                }
+
+                app.innerHTML = data.map(f => `
+                    <div class="feedback-card">
+                        <div class="feedback-content">${escapeHtml(f.content)}</div>
+                        <div class="feedback-time">${formatTime(f.created_at)}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                app.innerHTML = '<div class="error">加载失败: ' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        function formatTime(iso) {
+            const d = new Date(iso);
+            const pad = n => String(n).padStart(2, '0');
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+                + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
