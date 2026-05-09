@@ -171,7 +171,7 @@ private fun ChatTopBar(onOpenSettings: () -> Unit) {
                 .height(64.dp)
         ) {
             Text(
-                text = "DeepSeek Chat",
+                text = "Chat Bot",
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.align(Alignment.Center)
@@ -270,7 +270,7 @@ private fun ChatContentPreview() {
         ChatContent(
             uiState = ChatUiState(
                 messages = listOf(
-                    ChatMessage(1, "你好，我是 DeepSeek 聊天助手。", ChatRole.Assistant),
+                    ChatMessage(1, "你好，我是智能聊天助手。", ChatRole.Assistant),
                     ChatMessage(2, "请帮我写一个周报提纲。", ChatRole.User),
                     ChatMessage(3, "可以，我会按工作进展、问题风险、下周计划来整理。", ChatRole.Assistant)
                 )

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
-        ChatMessage(1, "你好，我是 DeepSeek 聊天助手。", ChatRole.Assistant)
+        ChatMessage(1, "你好，我是智能聊天助手。", ChatRole.Assistant)
     ),
     val inputText: String = "",
     val isLoading: Boolean = false,
