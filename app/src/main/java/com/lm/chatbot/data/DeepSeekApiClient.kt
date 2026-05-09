@@ -9,11 +9,14 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.content.TextContent
 import io.ktor.http.contentType
+import io.ktor.utils.io.readUTF8Line
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -45,8 +48,47 @@ class DeepSeekApiClient(
         )
     }
 
+    suspend fun createChatCompletionStream(
+        messages: List<ChatMessage>,
+        onToken: (String) -> Unit
+    ) {
+        if (apiKey.isBlank()) {
+            error("请先在 local.properties 中配置 DEEPSEEK_API_KEY")
+        }
+
+        val body = JSONObject()
+            .put("model", "deepseek-v4-flash")
+            .put("messages", buildApiMessages(messages))
+            .put("thinking", JSONObject().put("type", "disabled"))
+            .put("stream", true)
+
+        httpClient.preparePost(chatCompletionUrl) {
+            bearerAuth(apiKey)
+            contentType(ContentType.Application.Json)
+            setBody(TextContent(body.toString(), ContentType.Application.Json))
+        }.execute { response ->
+            val channel = response.bodyAsChannel()
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: continue
+                if (line.startsWith("data: ")) {
+                    val data = line.removePrefix("data: ")
+                    if (data == "[DONE]") break
+                    parseStreamDelta(data)?.let { onToken(it) }
+                }
+            }
+        }
+    }
+
     private fun buildRequestBody(messages: List<ChatMessage>): JSONObject {
-        val apiMessages = JSONArray().apply {
+        return JSONObject()
+            .put("model", "deepseek-v4-flash")
+            .put("messages", buildApiMessages(messages))
+            .put("thinking", JSONObject().put("type", "disabled"))
+            .put("stream", false)
+    }
+
+    private fun buildApiMessages(messages: List<ChatMessage>): JSONArray {
+        return JSONArray().apply {
             messages.forEach { message ->
                 put(
                     JSONObject()
@@ -55,12 +97,16 @@ class DeepSeekApiClient(
                 )
             }
         }
+    }
 
-        return JSONObject()
-            .put("model", "deepseek-v4-flash")
-            .put("messages", apiMessages)
-            .put("thinking", JSONObject().put("type", "disabled"))
-            .put("stream", false)
+    private fun parseStreamDelta(data: String): String? {
+        return runCatching {
+            JSONObject(data)
+                .getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("delta")
+                .optString("content")
+        }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 
     private fun parseAssistantMessage(responseBody: String): String {

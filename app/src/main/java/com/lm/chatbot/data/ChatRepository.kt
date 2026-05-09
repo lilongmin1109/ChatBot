@@ -16,6 +16,15 @@ class ChatRepository(
         }
     }
 
+    suspend fun sendMessagesStream(
+        messages: List<ChatMessage>,
+        onToken: (String) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            apiClient.createChatCompletionStream(messages, onToken)
+        }
+    }
+
     suspend fun loadMessages(): List<ChatMessage>? {
         return withContext(Dispatchers.IO) {
             ChatStorage.loadMessages(filesDir)

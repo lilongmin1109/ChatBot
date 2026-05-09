@@ -51,10 +51,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             role = ChatRole.User
         )
         val conversation = uiState.value.messages + userMessage
+        val assistantId = nextMessageId() + 1
 
         _uiState.update {
             it.copy(
-                messages = conversation,
+                messages = conversation + ChatMessage(
+                    id = assistantId,
+                    content = "",
+                    role = ChatRole.Assistant
+                ),
                 inputText = "",
                 isLoading = true,
                 errorMessage = null
@@ -63,17 +68,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             runCatching {
-                repository.sendMessages(conversation)
-            }.onSuccess { reply ->
-                val updated = uiState.value.messages + ChatMessage(
-                    id = nextMessageId(),
-                    content = reply,
-                    role = ChatRole.Assistant
-                )
-                _uiState.update {
-                    it.copy(messages = updated, isLoading = false)
+                val fullContent = StringBuilder()
+                repository.sendMessagesStream(conversation) { token ->
+                    fullContent.append(token)
+                    _uiState.update { state ->
+                        val updated = state.messages.toMutableList()
+                        val lastIndex = updated.lastIndex
+                        updated[lastIndex] = updated[lastIndex].copy(content = fullContent.toString())
+                        state.copy(messages = updated)
+                    }
                 }
-                repository.saveMessages(updated.takeLast(MAX_SAVED_MESSAGES))
+                fullContent.toString()
+            }.onSuccess { reply ->
+                if (reply.isEmpty()) error("未收到回复")
+                _uiState.update { it.copy(isLoading = false) }
+                repository.saveMessages(uiState.value.messages.takeLast(MAX_SAVED_MESSAGES))
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
