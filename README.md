@@ -43,7 +43,7 @@ SUPABASE_KEY=你的_SUPABASE_匿名_KEY
 
 | 聊天界面 | 设置页面 |
 | :---: | :---: |
-| ![Chat Screen](https://via.placeholder.com/200x400?text=Chat+Screen) | ![Settings Screen](https://via.placeholder.com/200x400?text=Settings+Screen) |
+| ![聊天界面](screenshots/chat_screen.png) | ![设置页面](screenshots/settings_screen.png) |
 
 ## 📄 开源协议
 本项目采用 [MIT License](LICENSE) 开源。
