@@ -17,6 +17,7 @@ object ChatStorage {
                         .put("id", msg.id)
                         .put("content", msg.content)
                         .put("role", msg.role.apiValue)
+                        .put("timestamp", msg.timestamp)
                 )
             }
         }
@@ -33,7 +34,8 @@ object ChatStorage {
             ChatMessage(
                 id = obj.getInt("id"),
                 content = obj.getString("content"),
-                role = if (obj.getString("role") == "user") ChatRole.User else ChatRole.Assistant
+                role = if (obj.getString("role") == "user") ChatRole.User else ChatRole.Assistant,
+                timestamp = obj.optLong("timestamp", System.currentTimeMillis())
             )
         }
         return messages.ifEmpty { null }

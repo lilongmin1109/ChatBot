@@ -51,14 +51,25 @@ class MainActivity : ComponentActivity() {
                 val systemBarColor = MaterialTheme.colorScheme.surface.toArgb()
 
                 SideEffect {
-                    window.statusBarColor = systemBarColor
-                    window.navigationBarColor = systemBarColor
+                    val windowInsetsController = WindowCompat.getInsetsController(window, view)
+                    
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        // Android 11+ 使用新的 API
+                        windowInsetsController.systemBarsBehavior = 
+                            androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    } else {
+                        // Android 10 及以下使用传统方式
+                        @Suppress("DEPRECATION")
+                        window.statusBarColor = systemBarColor
+                        @Suppress("DEPRECATION")
+                        window.navigationBarColor = systemBarColor
+                    }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         window.isNavigationBarContrastEnforced = false
                     }
 
-                    WindowCompat.getInsetsController(window, view).apply {
+                    windowInsetsController.apply {
                         isAppearanceLightStatusBars = !isDarkTheme
                         isAppearanceLightNavigationBars = !isDarkTheme
                     }

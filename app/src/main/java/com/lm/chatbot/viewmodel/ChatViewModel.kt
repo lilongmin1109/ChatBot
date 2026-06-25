@@ -16,7 +16,7 @@ private const val MAX_SAVED_MESSAGES = 100
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
-        ChatMessage(1, "你好，我是智能聊天助手。", ChatRole.Assistant)
+        ChatMessage(1, "你好，我是智能聊天助手。", ChatRole.Assistant, System.currentTimeMillis())
     ),
     val inputText: String = "",
     val isLoading: Boolean = false,
