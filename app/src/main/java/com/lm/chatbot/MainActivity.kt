@@ -16,10 +16,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lm.chatbot.ui.chat.ChatScreen
 import com.lm.chatbot.ui.settings.FeedbackScreen
 import com.lm.chatbot.ui.settings.SettingsScreen
 import com.lm.chatbot.ui.theme.ChatBotTheme
+import com.lm.chatbot.viewmodel.ChatViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +29,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val preferences = getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
         setContent {
+            val chatViewModel: ChatViewModel = viewModel()
             var isDarkTheme by rememberSaveable {
                 mutableStateOf(preferences.getBoolean(KEY_DARK_THEME, false))
             }
@@ -88,7 +91,11 @@ class MainActivity : ComponentActivity() {
                         webSearchEnabled = webSearchEnabled,
                         onWebSearchChange = { webSearchEnabled = it },
                         onBack = { currentScreen = AppScreen.Chat },
-                        onOpenFeedback = { currentScreen = AppScreen.Feedback }
+                        onOpenFeedback = { currentScreen = AppScreen.Feedback },
+                        onClearChatHistory = {
+                            chatViewModel.clearChatHistory()
+                            currentScreen = AppScreen.Chat
+                        }
                     )
 
                     AppScreen.Feedback -> FeedbackScreen(

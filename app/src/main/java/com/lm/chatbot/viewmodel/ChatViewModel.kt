@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val MAX_SAVED_MESSAGES = 100
+private const val MAX_SAVED_MESSAGES = 10
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
@@ -107,5 +107,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun nextMessageId(): Int {
         return (uiState.value.messages.maxOfOrNull { it.id } ?: 0) + 1
+    }
+
+    fun clearChatHistory() {
+        viewModelScope.launch {
+            repository.clearMessages()
+            _uiState.update {
+                it.copy(
+                    messages = listOf(
+                        ChatMessage(1, "你好，我是智能聊天助手。", ChatRole.Assistant, System.currentTimeMillis())
+                    )
+                )
+            }
+        }
     }
 }

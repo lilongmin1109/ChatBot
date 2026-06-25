@@ -41,6 +41,7 @@ fun SettingsScreen(
     onWebSearchChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenFeedback: () -> Unit,
+    onClearChatHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
@@ -121,6 +122,28 @@ fun SettingsScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClearChatHistory() },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "清除聊天记录",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -172,7 +195,8 @@ private fun SettingsScreenPreview() {
             webSearchEnabled = false,
             onWebSearchChange = {},
             onBack = {},
-            onOpenFeedback = {}
+            onOpenFeedback = {},
+            onClearChatHistory = {}
         )
     }
 }

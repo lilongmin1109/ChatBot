@@ -40,4 +40,11 @@ object ChatStorage {
         }
         return messages.ifEmpty { null }
     }
+
+    fun clearMessages(dir: File) {
+        val file = File(dir, FILE_NAME)
+        if (file.exists()) {
+            file.delete()
+        }
+    }
 }

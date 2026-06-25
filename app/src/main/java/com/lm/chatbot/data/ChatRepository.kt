@@ -41,4 +41,10 @@ class ChatRepository(
             ChatStorage.saveMessages(filesDir, messages)
         }
     }
+
+    suspend fun clearMessages() {
+        withContext(Dispatchers.IO) {
+            ChatStorage.clearMessages(filesDir)
+        }
+    }
 }

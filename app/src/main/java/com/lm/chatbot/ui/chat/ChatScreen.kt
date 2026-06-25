@@ -53,12 +53,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import com.lm.chatbot.model.ChatMessage
 import com.lm.chatbot.model.ChatRole
 import com.lm.chatbot.ui.theme.ChatBotTheme
@@ -211,13 +213,18 @@ private fun ChatTopBar(onOpenSettings: () -> Unit) {
 private fun ChatBubble(message: ChatMessage, modifier: Modifier = Modifier) {
     val isAssistant = message.role == ChatRole.Assistant
     val isPlaceholder = isAssistant && message.content.isEmpty()
+    val bubbleModifier = if (message.isFromUser) {
+        Modifier.sizeIn(maxWidth = 300.dp)
+    } else {
+        Modifier.fillMaxWidth()
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = if (message.isFromUser) Alignment.End else Alignment.Start
     ) {
         Card(
-            modifier = Modifier.sizeIn(maxWidth = 300.dp),
+            modifier = bubbleModifier,
             shape = RoundedCornerShape(
                 topStart = 18.dp,
                 topEnd = 18.dp,
@@ -250,11 +257,12 @@ private fun ChatBubble(message: ChatMessage, modifier: Modifier = Modifier) {
                 } else {
                     MaterialTheme.colorScheme.onSecondaryContainer
                 }
-                
-                Text(
-                    text = message.content,
+
+                MessageBody(
+                    content = message.content,
+                    isFromUser = message.isFromUser,
+                    textColor = textColor,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyLarge.copy(color = textColor)
                 )
             }
         }
@@ -267,6 +275,118 @@ private fun ChatBubble(message: ChatMessage, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
+}
+
+@Composable
+private fun MessageBody(
+    content: String,
+    isFromUser: Boolean,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor)
+
+    if (isFromUser) {
+        Text(
+            text = content,
+            modifier = modifier,
+            style = textStyle
+        )
+    } else {
+        val markdown = remember(content) { normalizeMarkdownForDisplay(content) }
+
+        MarkdownText(
+            markdown = markdown,
+            modifier = modifier,
+            style = textStyle,
+            linkColor = MaterialTheme.colorScheme.primary,
+            syntaxHighlightColor = MaterialTheme.colorScheme.surfaceVariant,
+            syntaxHighlightTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            enableSoftBreakAddsNewLine = true,
+            isTextSelectable = true,
+            wrapMultilineTextWidth = true
+        )
+    }
+}
+
+private fun normalizeMarkdownForDisplay(content: String): String {
+    return content
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .splitMarkdownCodeFences()
+        .joinToString("") { segment ->
+            if (segment.isCodeFence) {
+                segment.text
+            } else {
+                segment.text
+                    .breakBeforeHeadings()
+                    .breakHeadingBeforeTable()
+                    .breakCompactBulletItems()
+                    .breakCompactTableRows()
+                    .trimExtraBlankLines()
+            }
+        }
+        .trim()
+}
+
+private data class MarkdownSegment(
+    val text: String,
+    val isCodeFence: Boolean
+)
+
+private fun String.splitMarkdownCodeFences(): List<MarkdownSegment> {
+    val segments = mutableListOf<MarkdownSegment>()
+    val builder = StringBuilder()
+    var isCodeFence = false
+
+    lineSequence().forEach { line ->
+        if (line.trimStart().startsWith("```")) {
+            if (builder.isNotEmpty()) {
+                segments += MarkdownSegment(builder.toString(), isCodeFence)
+                builder.clear()
+            }
+            isCodeFence = !isCodeFence
+            builder.appendLine(line)
+        } else {
+            builder.appendLine(line)
+        }
+    }
+
+    if (builder.isNotEmpty()) {
+        segments += MarkdownSegment(builder.toString(), isCodeFence)
+    }
+
+    return segments
+}
+
+private fun String.breakBeforeHeadings(): String {
+    return replace(Regex("""([^\n])(?=#{1,6}\s)"""), "$1\n\n")
+}
+
+private fun String.breakHeadingBeforeTable(): String {
+    return replace(
+        Regex("""(?m)^(#{1,6}\s+[^|\n]+)(\|[^\n]+\|)"""),
+        "$1\n\n$2"
+    )
+}
+
+private fun String.breakCompactBulletItems(): String {
+    return replace(
+        Regex("""([^\n])\s*-\s+(?=(\*\*[^*\n]+?\*\*|[\p{So}\p{L}\p{N}]{1,12})[:：])"""),
+        "$1\n- "
+    )
+}
+
+private fun String.breakCompactTableRows(): String {
+    val tableRow = """\|[^|\n]+(?:\|[^|\n]+)+\|"""
+    return replace(
+        Regex("""($tableRow)\s*(?=$tableRow)"""),
+        "$1\n"
+    )
+}
+
+private fun String.trimExtraBlankLines(): String {
+    return replace(Regex("""\n{3,}"""), "\n\n")
 }
 
 @Composable
