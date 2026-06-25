@@ -1,6 +1,7 @@
 package com.lm.chatbot.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lm.chatbot.data.ChatRepository
@@ -85,6 +86,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 fullContent.toString()
             }.onSuccess { reply ->
                 if (reply.isEmpty()) error("未收到回复")
+
+                // 打印完整的 AI 回复
+                Log.d("ChatViewModel", "========== AI 完整回复 ==========")
+                Log.d("ChatViewModel", reply)
+                Log.d("ChatViewModel", "========== 回复结束，总长度: ${reply.length} ==========")
+
                 _uiState.update { it.copy(isLoading = false) }
                 repository.saveMessages(uiState.value.messages.takeLast(MAX_SAVED_MESSAGES))
             }.onFailure { throwable ->
