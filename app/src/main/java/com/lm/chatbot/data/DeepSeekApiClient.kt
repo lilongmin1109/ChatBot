@@ -51,16 +51,18 @@ class DeepSeekApiClient(
 
     suspend fun createChatCompletionStream(
         messages: List<ChatMessage>,
+        thinkingEnabled: Boolean = false,
         onToken: (String) -> Unit
     ) {
         if (apiKey.isBlank()) {
             error("请先在 local.properties 中配置 DEEPSEEK_API_KEY")
         }
 
+        val thinkingType = if (thinkingEnabled) "enabled" else "disabled"
         val body = JSONObject()
             .put("model", "deepseek-v4-flash")
             .put("messages", buildApiMessages(messages))
-            .put("thinking", JSONObject().put("type", "disabled"))
+            .put("thinking", JSONObject().put("type", thinkingType))
             .put("stream", true)
 
         httpClient.preparePost(chatCompletionUrl) {
@@ -127,11 +129,12 @@ class DeepSeekApiClient(
         }
     }
 
-    private fun buildRequestBody(messages: List<ChatMessage>): JSONObject {
+    private fun buildRequestBody(messages: List<ChatMessage>, thinkingEnabled: Boolean = false): JSONObject {
+        val thinkingType = if (thinkingEnabled) "enabled" else "disabled"
         return JSONObject()
             .put("model", "deepseek-v4-flash")
             .put("messages", buildApiMessages(messages))
-            .put("thinking", JSONObject().put("type", "disabled"))
+            .put("thinking", JSONObject().put("type", thinkingType))
             .put("stream", false)
     }
 

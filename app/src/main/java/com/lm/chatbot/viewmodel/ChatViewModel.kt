@@ -68,13 +68,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            val webSearchEnabled = getApplication<Application>()
+            val prefs = getApplication<Application>()
                 .getSharedPreferences("chat_bot_preferences", Application.MODE_PRIVATE)
-                .getBoolean("web_search", false)
+            val webSearchEnabled = prefs.getBoolean("web_search", false)
+            val thinkingModeEnabled = prefs.getBoolean("thinking_mode", false)
 
             runCatching {
                 val fullContent = StringBuilder()
-                repository.sendMessagesStream(conversation, webSearchEnabled) { token ->
+                repository.sendMessagesStream(conversation, webSearchEnabled, thinkingModeEnabled) { token ->
                     fullContent.append(token)
                     _uiState.update { state ->
                         val updated = state.messages.toMutableList()

@@ -36,6 +36,9 @@ class MainActivity : ComponentActivity() {
             var webSearchEnabled by rememberSaveable {
                 mutableStateOf(preferences.getBoolean(KEY_WEB_SEARCH, false))
             }
+            var thinkingModeEnabled by rememberSaveable {
+                mutableStateOf(preferences.getBoolean(KEY_THINKING_MODE, false))
+            }
 
             LaunchedEffect(isDarkTheme) {
                 preferences.edit()
@@ -46,6 +49,12 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(webSearchEnabled) {
                 preferences.edit()
                     .putBoolean(KEY_WEB_SEARCH, webSearchEnabled)
+                    .apply()
+            }
+
+            LaunchedEffect(thinkingModeEnabled) {
+                preferences.edit()
+                    .putBoolean(KEY_THINKING_MODE, thinkingModeEnabled)
                     .apply()
             }
 
@@ -90,6 +99,8 @@ class MainActivity : ComponentActivity() {
                         onDarkThemeChange = { isDarkTheme = it },
                         webSearchEnabled = webSearchEnabled,
                         onWebSearchChange = { webSearchEnabled = it },
+                        thinkingModeEnabled = thinkingModeEnabled,
+                        onThinkingModeChange = { thinkingModeEnabled = it },
                         onBack = { currentScreen = AppScreen.Chat },
                         onOpenFeedback = { currentScreen = AppScreen.Feedback },
                         onClearChatHistory = {
@@ -116,3 +127,4 @@ private enum class AppScreen {
 private const val PREFERENCES_NAME = "chat_bot_preferences"
 private const val KEY_DARK_THEME = "dark_theme"
 private const val KEY_WEB_SEARCH = "web_search"
+private const val KEY_THINKING_MODE = "thinking_mode"

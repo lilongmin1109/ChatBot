@@ -19,13 +19,14 @@ class ChatRepository(
     suspend fun sendMessagesStream(
         messages: List<ChatMessage>,
         webSearchEnabled: Boolean = false,
+        thinkingModeEnabled: Boolean = false,
         onToken: (String) -> Unit
     ) {
         withContext(Dispatchers.IO) {
             if (webSearchEnabled) {
                 apiClient.createWebSearchStream(messages, onToken)
             } else {
-                apiClient.createChatCompletionStream(messages, onToken)
+                apiClient.createChatCompletionStream(messages, thinkingModeEnabled, onToken)
             }
         }
     }

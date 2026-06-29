@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,7 +27,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
+
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
@@ -39,12 +48,51 @@ fun SettingsScreen(
     onDarkThemeChange: (Boolean) -> Unit,
     webSearchEnabled: Boolean,
     onWebSearchChange: (Boolean) -> Unit,
+    thinkingModeEnabled: Boolean,
+    onThinkingModeChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenFeedback: () -> Unit,
     onClearChatHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
+
+    var showClearDialog by remember { mutableStateOf(false) }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = {
+                Text(
+                    text = "确认清空",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Text(
+                    text = "确定要清空所有本地聊天缓存数据吗？此操作不可恢复。",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearDialog = false
+                        onClearChatHistory()
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showClearDialog = false }
+                ) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -104,6 +152,25 @@ fun SettingsScreen(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "深度思考",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Switch(
+                    checked = thinkingModeEnabled,
+                    onCheckedChange = onThinkingModeChange
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onOpenFeedback() },
@@ -128,7 +195,7 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onClearChatHistory() },
+                    .clickable { showClearDialog = true },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -194,6 +261,8 @@ private fun SettingsScreenPreview() {
             onDarkThemeChange = {},
             webSearchEnabled = false,
             onWebSearchChange = {},
+            thinkingModeEnabled = false,
+            onThinkingModeChange = {},
             onBack = {},
             onOpenFeedback = {},
             onClearChatHistory = {}
