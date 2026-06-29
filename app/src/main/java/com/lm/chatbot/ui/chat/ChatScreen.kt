@@ -313,12 +313,15 @@ private fun normalizeMarkdownForDisplay(content: String): String {
     return content
         .replace("\r\n", "\n")
         .replace("\r", "\n")
+        .cleanLineWhitespace()
         .splitMarkdownCodeFences()
         .joinToString("") { segment ->
             if (segment.isCodeFence) {
                 segment.text
             } else {
                 segment.text
+                    .fixMarkerSpacing()
+                    .breakInlineBlocks()
                     .breakBeforeHeadings()
                     .breakHeadingBeforeTable()
                     .breakCompactBulletItems()
@@ -359,6 +362,50 @@ private fun String.splitMarkdownCodeFences(): List<MarkdownSegment> {
     return segments
 }
 
+/** 清理每行尾部的多余空白，并将连续 3+ 空格压缩为 2 个空格 */
+private fun String.cleanLineWhitespace(): String {
+    return lineSequence().joinToString("\n") { line ->
+        line.trimEnd().replace(Regex(""" {3,}"""), "  ")
+    }
+}
+
+/**
+ * 修复 Markdown 标记后缺失的空格。
+ * - `###文本` → `### 文本`
+ * - `>引用`  → `> 引用`
+ */
+private fun String.fixMarkerSpacing(): String {
+    return this
+        .replace(Regex("""(#{1,6})([^\s#\n])"""), "$1 $2")
+        .replace(Regex("""(^|\n)>([^\s>\n])""")) { "${it.groupValues[1]}> ${it.groupValues[2]}" }
+}
+
+/**
+ * 将 AI 模型输出中粘连的块级元素拆分到独立行。
+ * 处理四种常见粘连模式：
+ * - 标题后紧跟表格：`### 标题|col|col|` → `### 标题\n\n|col|col|`
+ * - 标题后紧跟列表：`### 标题- item` → `### 标题\n- item`
+ * - 正文后紧跟列表：`正文- **粗体**` → `正文\n- **粗体**`
+ * - 正文后紧跟标题：`正文### 标题` → `正文\n\n### 标题`
+ */
+private fun String.breakInlineBlocks(): String {
+    var result = this
+
+    // 标题后紧跟表格管道符
+    result = result.replace(Regex("""(#{1,6}\s[^\n|]+?)(\s*\|[^\n]+\|)"""), "$1\n\n$2")
+
+    // 标题后紧跟列表项（仅匹配同行内 tab/空格，不跨行）
+    result = result.replace(Regex("""(#{1,6}\s[^\n]+?)[ \t]*([-*+]\s)"""), "$1\n$2")
+
+    // 正文后紧跟列表项（- **粗体开头** 是明确的列表信号）
+    result = result.replace(Regex("""([^\n\s-])\s*-\s\*\*"""), "$1\n- **")
+
+    // 正文后紧跟标题标记
+    result = result.replace(Regex("""([^\n#])(#{1,6}\s)"""), "$1\n\n$2")
+
+    return result
+}
+
 private fun String.breakBeforeHeadings(): String {
     return replace(Regex("""([^\n])(?=#{1,6}\s)"""), "$1\n\n")
 }
@@ -370,11 +417,43 @@ private fun String.breakHeadingBeforeTable(): String {
     )
 }
 
+/**
+ * 在列表/引用块前补空行。
+ * 逐行扫描：仅在非同类块级元素前插入空行，连续列表项之间保持紧凑。
+ */
 private fun String.breakCompactBulletItems(): String {
-    return replace(
-        Regex("""([^\n])\s*-\s+(?=(\*\*[^*\n]+?\*\*|[\p{So}\p{L}\p{N}]{1,12})[:：])"""),
-        "$1\n- "
-    )
+    val lines = this.lines()
+    if (lines.size < 2) return this
+    val result = StringBuilder()
+    for (i in lines.indices) {
+        val line = lines[i]
+        val prevLine = if (i > 0) lines[i - 1] else null
+        val trimmed = line.trimStart()
+
+        val isListItem = trimmed.let {
+            it.startsWith("- ") || it.startsWith("* ") || it.startsWith("+ ") ||
+            Regex("""^\d+[.)]\s""").containsMatchIn(it)
+        }
+        val isBlockquote = trimmed.startsWith("> ")
+        val isBlockElement = isListItem || isBlockquote
+
+        val prevTrimmed = prevLine?.trimStart()
+        val isPrevBlank = prevLine?.isBlank() ?: true
+        val isPrevSameBlock = prevTrimmed?.let {
+            if (isListItem) {
+                it.startsWith("- ") || it.startsWith("* ") || it.startsWith("+ ") ||
+                Regex("""^\d+[.)]\s""").containsMatchIn(it)
+            } else if (isBlockquote) {
+                it.startsWith("> ")
+            } else false
+        } ?: false
+
+        if (isBlockElement && !isPrevBlank && !isPrevSameBlock) {
+            result.appendLine()
+        }
+        result.appendLine(line)
+    }
+    return result.toString().trimEnd()
 }
 
 private fun String.breakCompactTableRows(): String {
