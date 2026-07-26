@@ -45,7 +45,7 @@
 
 ### Clone / 克隆
 ```bash
-git clone https://github.com/your-username/ChatBot.git
+git clone https://github.com/lilongmin1109/ChatBot.git
 cd ChatBot
 ```
 
